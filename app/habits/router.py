@@ -37,7 +37,10 @@ def update_habit(
     habit: Habit = Depends(get_habit_or_404),
     session: Session = Depends(get_session),
 ) -> Habit:
-    return service.update_habit(session, habit, data)
+    try:
+        return service.update_habit(session, habit, data)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
 @router.delete("/{habit_id}", status_code=status.HTTP_204_NO_CONTENT)

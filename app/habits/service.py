@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.habits.models import Habit
 from app.habits.schemas import HabitCreate, HabitUpdate
+from app.habits.validation import check_habit_invariants
 
 
 def create_habit(session: Session, data: HabitCreate) -> Habit:
@@ -24,7 +25,16 @@ def get_habit(session: Session, habit_id: int) -> Habit | None:
 
 
 def update_habit(session: Session, habit: Habit, data: HabitUpdate) -> Habit:
-    for field, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    check_habit_invariants(
+        kind=updates.get("kind", habit.kind),
+        target=updates.get("target", habit.target),
+        period_scope=updates.get("period_scope", habit.period_scope),
+        cadence=updates.get("cadence", habit.cadence),
+        active_from=updates.get("active_from", habit.active_from),
+        active_to=updates.get("active_to", habit.active_to),
+    )
+    for field, value in updates.items():
         setattr(habit, field, value)
     session.commit()
     session.refresh(habit)
