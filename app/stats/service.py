@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from app.completions.models import Completion
 from app.habits.models import Habit
 from app.stats.evaluation import is_target_met
+from app.stats.models import NeutralizedDay
 from app.stats.periods import period_bounds
-from app.stats.schemas import DaySummary, HabitDayProgress
+from app.stats.schemas import DaySummary, HabitDayProgress, NeutralizedDayCreate
 
 
 def get_active_habits(session: Session, on_date: date) -> list[Habit]:
@@ -59,3 +60,27 @@ def get_day_summary(session: Session, on_date: date) -> DaySummary:
         habits_total=len(progress),
         habits=progress,
     )
+
+
+def get_neutralized_day(session: Session, on_date: date) -> NeutralizedDay | None:
+    return session.get(NeutralizedDay, on_date)
+
+
+def is_neutralized(session: Session, on_date: date) -> bool:
+    return get_neutralized_day(session, on_date) is not None
+
+
+def create_neutralized_day(session: Session, data: NeutralizedDayCreate) -> NeutralizedDay:
+    if get_neutralized_day(session, data.logical_date) is not None:
+        raise ValueError("this date is already neutralized")
+
+    neutralized = NeutralizedDay(logical_date=data.logical_date, reason=data.reason)
+    session.add(neutralized)
+    session.commit()
+    session.refresh(neutralized)
+    return neutralized
+
+
+def delete_neutralized_day(session: Session, neutralized: NeutralizedDay) -> None:
+    session.delete(neutralized)
+    session.commit()

@@ -10,6 +10,7 @@ from app.core.database import Base
 
 from app.habits.models import Habit  # noqa: F401
 from app.completions.models import Completion  # noqa: F401
+from app.stats.models import NeutralizedDay  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

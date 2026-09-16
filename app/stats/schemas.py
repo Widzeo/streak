@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.habits.enums import Direction, HabitKind, PeriodScope
 
@@ -24,3 +24,15 @@ class DaySummary(BaseModel):
     habits_met: int
     habits_total: int
     habits: list[HabitDayProgress]
+
+
+class NeutralizedDayCreate(BaseModel):
+    logical_date: date
+    reason: str | None = None
+
+
+class NeutralizedDayRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    logical_date: date
+    reason: str | None
