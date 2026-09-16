@@ -16,6 +16,8 @@ def compute_period_statuses(
     direction: Direction,
     daily_totals: dict[date, Decimal],
     neutralized_dates: set[date],
+    active_from: date,
+    active_to: date | None = None,
 ) -> list[PeriodStatus]:
     """One status per period of `scope` overlapping [range_start, range_end], oldest first."""
     statuses = []
@@ -23,7 +25,15 @@ def compute_period_statuses(
     while current <= range_end:
         statuses.append(
             is_period_complete(
-                scope, current, cadence, target, direction, daily_totals, neutralized_dates
+                scope,
+                current,
+                cadence,
+                target,
+                direction,
+                daily_totals,
+                neutralized_dates,
+                active_from,
+                active_to,
             )
         )
         _, end = period_bounds(scope, current)
@@ -70,8 +80,19 @@ def streak(
     direction: Direction,
     daily_totals: dict[date, Decimal],
     neutralized_dates: set[date],
+    active_from: date,
+    active_to: date | None = None,
 ) -> Streak:
     statuses = compute_period_statuses(
-        scope, range_start, range_end, cadence, target, direction, daily_totals, neutralized_dates
+        scope,
+        range_start,
+        range_end,
+        cadence,
+        target,
+        direction,
+        daily_totals,
+        neutralized_dates,
+        active_from,
+        active_to,
     )
     return Streak(current=current_streak(statuses), best=best_streak(statuses))

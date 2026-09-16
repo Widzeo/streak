@@ -21,8 +21,18 @@ def is_period_complete(
     direction: Direction,
     daily_totals: dict[date, Decimal],
     neutralized_dates: set[date],
+    active_from: date,
+    active_to: date | None = None,
 ) -> PeriodStatus:
     start, end = period_bounds(scope, on_date)
+    start = max(start, active_from)
+    if active_to is not None:
+        end = min(end, active_to)
+
+    if start > end:
+        # the habit was not active during any part of this period
+        return PeriodStatus.NEUTRALIZED
+
     days = [start + timedelta(days=n) for n in range((end - start).days + 1)]
     eligible_days = [d for d in days if d not in neutralized_dates]
 
