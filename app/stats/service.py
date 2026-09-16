@@ -10,12 +10,14 @@ from app.stats.completeness import PeriodStatus, count_days_met, is_period_compl
 from app.stats.models import NeutralizedDay
 from app.stats.periods import period_bounds
 from app.stats.schemas import (
+    DayHeatmapEntry,
     DaySummary,
     HabitDayProgress,
     HabitStats,
     NeutralizedDayCreate,
     StreakSummary,
     StreaksOverview,
+    YearHeatmap,
 )
 from app.stats.streaks import Streak, streak
 
@@ -172,6 +174,83 @@ def get_streaks_overview(session: Session, today: date) -> StreaksOverview:
             )
         )
     return StreaksOverview(date=today, streaks=summaries)
+
+
+def get_year_heatmap(session: Session, year: int) -> YearHeatmap:
+    year_start = date(year, 1, 1)
+    year_end = date(year, 12, 31)
+    # a week-scope period can straddle the year boundary (e.g. the week of
+    # Dec 29 - Jan 4): pad the fetch range by a week on each side so those
+    # periods are evaluated with complete data, not a truncated view.
+    buffer = timedelta(days=6)
+    fetch_start = year_start - buffer
+    fetch_end = year_end + buffer
+
+    habits = list(
+        session.scalars(
+            select(Habit).where(
+                Habit.active_from <= year_end,
+                (Habit.active_to.is_(None)) | (Habit.active_to >= year_start),
+            )
+        )
+    )
+
+    neutralized_dates = get_neutralized_dates(session, fetch_start, fetch_end)
+
+    totals_by_habit: dict[int, dict[date, Decimal]] = {}
+    if habits:
+        rows = session.execute(
+            select(Completion.habit_id, Completion.logical_date, func.sum(Completion.value))
+            .where(
+                Completion.habit_id.in_([h.id for h in habits]),
+                Completion.logical_date >= fetch_start,
+                Completion.logical_date <= fetch_end,
+            )
+            .group_by(Completion.habit_id, Completion.logical_date)
+        )
+        for habit_id, logical_date, total in rows:
+            totals_by_habit.setdefault(habit_id, {})[logical_date] = total
+
+    days = []
+    current = year_start
+    while current <= year_end:
+        active_habits = [
+            h
+            for h in habits
+            if h.active_from <= current and (h.active_to is None or h.active_to >= current)
+        ]
+
+        met = 0
+        total_count = 0
+        for habit in active_habits:
+            status = is_period_complete(
+                habit.period_scope,
+                current,
+                habit.cadence,
+                habit.target,
+                habit.direction,
+                totals_by_habit.get(habit.id, {}),
+                neutralized_dates,
+                habit.active_from,
+                habit.active_to,
+            )
+            if status == PeriodStatus.NEUTRALIZED:
+                continue
+            total_count += 1
+            if status == PeriodStatus.COMPLETE:
+                met += 1
+
+        days.append(
+            DayHeatmapEntry(
+                date=current,
+                habits_met=met,
+                habits_total=total_count,
+                complete=total_count > 0 and met == total_count,
+            )
+        )
+        current += timedelta(days=1)
+
+    return YearHeatmap(year=year, days=days)
 
 
 def get_neutralized_day(session: Session, on_date: date) -> NeutralizedDay | None:

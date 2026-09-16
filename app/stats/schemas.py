@@ -49,6 +49,18 @@ class StreaksOverview(BaseModel):
     streaks: list[StreakSummary]
 
 
+class DayHeatmapEntry(BaseModel):
+    date: date
+    habits_met: int
+    habits_total: int
+    complete: bool
+
+
+class YearHeatmap(BaseModel):
+    year: int
+    days: list[DayHeatmapEntry]
+
+
 class NeutralizedDayCreate(BaseModel):
     logical_date: date
     reason: str | None = None

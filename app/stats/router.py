@@ -13,6 +13,7 @@ from app.stats.schemas import (
     NeutralizedDayCreate,
     NeutralizedDayRead,
     StreaksOverview,
+    YearHeatmap,
 )
 
 router = APIRouter(tags=["stats"])
@@ -38,6 +39,11 @@ def get_habit_stats(
     if habit is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Habit not found")
     return service.get_habit_stats(session, habit, as_of or date.today())
+
+
+@router.get("/stats/heatmap", response_model=YearHeatmap)
+def get_heatmap(year: int, session: Session = Depends(get_session)) -> YearHeatmap:
+    return service.get_year_heatmap(session, year)
 
 
 def get_neutralized_day_or_404(
