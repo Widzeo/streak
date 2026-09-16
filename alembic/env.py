@@ -8,7 +8,7 @@ from alembic import context
 from app.core.config import settings
 from app.core.database import Base
 
-from app.habits.models import Habit  # noqa: F401
+from app.habits.models import Category, Habit  # noqa: F401
 from app.completions.models import Completion  # noqa: F401
 from app.stats.models import NeutralizedDay  # noqa: F401
 

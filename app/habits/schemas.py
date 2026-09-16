@@ -17,6 +17,7 @@ class HabitCreate(BaseModel):
     target: Decimal
     direction: Direction = Direction.AT_LEAST
     is_essential: bool = False
+    category_id: int | None = None
     active_from: date
 
     @model_validator(mode="after")
@@ -41,6 +42,7 @@ class HabitUpdate(BaseModel):
     target: Decimal | None = None
     direction: Direction | None = None
     is_essential: bool | None = None
+    category_id: int | None = None
     active_from: date | None = None
     active_to: date | None = None
 
@@ -67,5 +69,21 @@ class HabitRead(BaseModel):
     target: Decimal
     direction: Direction
     is_essential: bool
+    category_id: int | None
     active_from: date
     active_to: date | None
+
+
+class CategoryCreate(BaseModel):
+    name: str
+
+
+class CategoryUpdate(BaseModel):
+    name: str
+
+
+class CategoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str

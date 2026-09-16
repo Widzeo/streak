@@ -3,10 +3,18 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_session
 from app.habits import service
-from app.habits.models import Habit
-from app.habits.schemas import HabitCreate, HabitRead, HabitUpdate
+from app.habits.models import Category, Habit
+from app.habits.schemas import (
+    CategoryCreate,
+    CategoryRead,
+    CategoryUpdate,
+    HabitCreate,
+    HabitRead,
+    HabitUpdate,
+)
 
 router = APIRouter(prefix="/habits", tags=["habits"])
+categories_router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 def get_habit_or_404(habit_id: int, session: Session = Depends(get_session)) -> Habit:
@@ -16,9 +24,19 @@ def get_habit_or_404(habit_id: int, session: Session = Depends(get_session)) -> 
     return habit
 
 
+def get_category_or_404(category_id: int, session: Session = Depends(get_session)) -> Category:
+    category = service.get_category(session, category_id)
+    if category is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found")
+    return category
+
+
 @router.post("", response_model=HabitRead, status_code=status.HTTP_201_CREATED)
 def create_habit(data: HabitCreate, session: Session = Depends(get_session)) -> Habit:
-    return service.create_habit(session, data)
+    try:
+        return service.create_habit(session, data)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
 @router.get("", response_model=list[HabitRead])
@@ -49,3 +67,30 @@ def delete_habit(
     session: Session = Depends(get_session),
 ) -> None:
     service.deactivate_habit(session, habit)
+
+
+@categories_router.post("", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
+def create_category(data: CategoryCreate, session: Session = Depends(get_session)) -> Category:
+    return service.create_category(session, data)
+
+
+@categories_router.get("", response_model=list[CategoryRead])
+def list_categories(session: Session = Depends(get_session)) -> list[Category]:
+    return service.list_categories(session)
+
+
+@categories_router.patch("/{category_id}", response_model=CategoryRead)
+def update_category(
+    data: CategoryUpdate,
+    category: Category = Depends(get_category_or_404),
+    session: Session = Depends(get_session),
+) -> Category:
+    return service.update_category(session, category, data)
+
+
+@categories_router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_category(
+    category: Category = Depends(get_category_or_404),
+    session: Session = Depends(get_session),
+) -> None:
+    service.delete_category(session, category)
