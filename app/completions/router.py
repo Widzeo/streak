@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.completions import service
 from app.completions.models import Completion
-from app.completions.schemas import CompletionCreate, CompletionRead
+from app.completions.schemas import CompletionCreate, CompletionHistoryPage, CompletionRead
 from app.core.database import get_session
 from app.habits import service as habits_service
 
 router = APIRouter(prefix="/completions", tags=["completions"])
+history_router = APIRouter(tags=["completions"])
 
 
 def get_completion_or_404(
@@ -38,3 +39,13 @@ def delete_completion(
     session: Session = Depends(get_session),
 ) -> None:
     service.delete_completion(session, completion)
+
+
+@history_router.get("/history", response_model=CompletionHistoryPage)
+def get_history(
+    habit_id: int | None = None,
+    limit: int = Query(default=50, gt=0, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+) -> CompletionHistoryPage:
+    return service.list_history(session, habit_id, limit, offset)

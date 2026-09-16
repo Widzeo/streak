@@ -17,3 +17,18 @@ class CompletionRead(BaseModel):
     habit_id: int
     logical_date: date
     value: Decimal
+
+
+class CompletionHistoryEntry(BaseModel):
+    id: int
+    habit_id: int
+    habit_name: str
+    logical_date: date
+    value: Decimal
+
+
+class CompletionHistoryPage(BaseModel):
+    items: list[CompletionHistoryEntry]
+    total: int
+    limit: int
+    offset: int
