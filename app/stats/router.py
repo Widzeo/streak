@@ -4,9 +4,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
+from app.habits import service as habits_service
 from app.stats import service
 from app.stats.models import NeutralizedDay
-from app.stats.schemas import DaySummary, NeutralizedDayCreate, NeutralizedDayRead
+from app.stats.schemas import (
+    DaySummary,
+    HabitStats,
+    NeutralizedDayCreate,
+    NeutralizedDayRead,
+    StreaksOverview,
+)
 
 router = APIRouter(tags=["stats"])
 
@@ -14,6 +21,23 @@ router = APIRouter(tags=["stats"])
 @router.get("/days/{on_date}", response_model=DaySummary)
 def get_day(on_date: date, session: Session = Depends(get_session)) -> DaySummary:
     return service.get_day_summary(session, on_date)
+
+
+@router.get("/stats/streaks", response_model=StreaksOverview)
+def get_streaks(
+    as_of: date | None = None, session: Session = Depends(get_session)
+) -> StreaksOverview:
+    return service.get_streaks_overview(session, as_of or date.today())
+
+
+@router.get("/habits/{habit_id}/stats", response_model=HabitStats)
+def get_habit_stats(
+    habit_id: int, as_of: date | None = None, session: Session = Depends(get_session)
+) -> HabitStats:
+    habit = habits_service.get_habit(session, habit_id)
+    if habit is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Habit not found")
+    return service.get_habit_stats(session, habit, as_of or date.today())
 
 
 def get_neutralized_day_or_404(

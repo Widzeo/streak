@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 
 from app.habits.enums import Direction, HabitKind, PeriodScope
+from app.stats.completeness import PeriodStatus
 
 
 class HabitDayProgress(BaseModel):
@@ -13,9 +14,11 @@ class HabitDayProgress(BaseModel):
     period_scope: PeriodScope
     direction: Direction
     is_essential: bool
-    total: Decimal
+    today_total: Decimal
     target: Decimal
-    met: bool
+    cadence: int
+    days_met: int
+    status: PeriodStatus
 
 
 class DaySummary(BaseModel):
@@ -24,6 +27,26 @@ class DaySummary(BaseModel):
     habits_met: int
     habits_total: int
     habits: list[HabitDayProgress]
+
+
+class HabitStats(BaseModel):
+    habit_id: int
+    name: str
+    current_streak: int
+    best_streak: int
+    today: HabitDayProgress
+
+
+class StreakSummary(BaseModel):
+    habit_id: int
+    name: str
+    current_streak: int
+    best_streak: int
+
+
+class StreaksOverview(BaseModel):
+    date: date
+    streaks: list[StreakSummary]
 
 
 class NeutralizedDayCreate(BaseModel):

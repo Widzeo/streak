@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from app.habits.enums import Direction, PeriodScope
-from app.stats.completeness import PeriodStatus, is_period_complete
+from app.stats.completeness import PeriodStatus, count_days_met, eligible_days, is_period_complete
 
 FAR_PAST = date(2020, 1, 1)  # a habit "always active" for tests not about active_from/active_to
 
@@ -264,3 +264,42 @@ def test_at_most_direction_with_cadence_counts_days_under_budget():
         active_from=FAR_PAST,
     )
     assert status == PeriodStatus.COMPLETE
+
+
+def test_eligible_days_excludes_pre_active_and_neutralized_days():
+    days = eligible_days(
+        PeriodScope.WEEK,
+        WED,
+        neutralized_dates={FRI},
+        active_from=WED,
+    )
+    assert days == [WED, THU, SAT, SUN]
+
+
+def test_count_days_met_ignores_neutralized_and_inactive_days():
+    count = count_days_met(
+        PeriodScope.WEEK,
+        WED,
+        target=Decimal(1),
+        direction=Direction.AT_LEAST,
+        daily_totals={MON: Decimal(1), WED: Decimal(1), FRI: Decimal(1)},
+        neutralized_dates={FRI},
+        active_from=FAR_PAST,
+    )
+    # Monday counts (active, not neutralized, met), Friday doesn't (neutralized)
+    assert count == 2
+
+
+def test_count_days_met_treats_a_missing_day_as_zero_which_still_satisfies_at_most():
+    # no completion at all was logged on Tuesday: for an at_most target,
+    # spending nothing still satisfies "at most 50", so it must count.
+    count = count_days_met(
+        PeriodScope.DAY,
+        TUE,
+        target=Decimal(50),
+        direction=Direction.AT_MOST,
+        daily_totals={},
+        neutralized_dates=set(),
+        active_from=FAR_PAST,
+    )
+    assert count == 1
