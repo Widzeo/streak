@@ -102,6 +102,24 @@ h1 {
   margin: 0;
 }
 
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.readonly-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--indigo);
+  background: var(--indigo-bg);
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+}
+
 .day-header-badges {
   display: flex;
   align-items: center;

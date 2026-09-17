@@ -22,7 +22,20 @@
   <header class="day-header">
     <div class="day-header-main">
       <p id="today-date" class="date-label"></p>
-      <h1>Aujourd'hui</h1>
+      <h1 id="page-title">Aujourd'hui</h1>
+
+      <div class="date-nav">
+        <div class="segmented" data-field="nav-scope" data-value="day">
+          <button type="button" class="segmented-option active" data-value="day">Jour</button>
+          <button type="button" class="segmented-option" data-value="week">Semaine</button>
+          <button type="button" class="segmented-option" data-value="month">Mois</button>
+          <button type="button" class="segmented-option" data-value="year">Année</button>
+        </div>
+        <button type="button" id="nav-prev" class="pagination-arrow" aria-label="Période précédente">‹</button>
+        <button type="button" id="nav-today" class="toggle-pill">Aujourd'hui</button>
+        <button type="button" id="nav-next" class="pagination-arrow" aria-label="Période suivante">›</button>
+        <span id="readonly-badge" class="readonly-badge" hidden>Lecture seule</span>
+      </div>
     </div>
 
     <div class="day-header-badges">
@@ -41,7 +54,7 @@
   </header>
 
   <main>
-    <section>
+    <section id="creation-section">
       <h2>Nouvelle habitude</h2>
       <form id="habit-form">
         <div class="form-row form-row-main">
@@ -108,7 +121,7 @@
 
     <section>
       <div class="section-header-row">
-        <h2>Aujourd'hui</h2>
+        <h2 id="cards-heading">Aujourd'hui</h2>
         <div class="pagination-info">
           <span id="pagination-label"></span>
           <button type="button" id="prev-page" class="pagination-arrow" aria-label="Précédent">‹</button>

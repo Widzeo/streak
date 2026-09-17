@@ -1,13 +1,52 @@
-function todayISO() {
-  const d = new Date();
+function toISODate(d) {
   const tz = d.getTimezoneOffset() * 60000;
   return new Date(d - tz).toISOString().slice(0, 10);
 }
 
+function todayISO() {
+  return toISODate(new Date());
+}
+
 const today = todayISO();
+let viewDate = today;
+
+function stepDate(dateStr, scope, direction) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (scope === "day") {
+    d.setDate(d.getDate() + direction);
+  } else if (scope === "week") {
+    d.setDate(d.getDate() + direction * 7);
+  } else if (scope === "month") {
+    d.setDate(1);
+    d.setMonth(d.getMonth() + direction);
+  } else if (scope === "year") {
+    d.setDate(1);
+    d.setMonth(0);
+    d.setFullYear(d.getFullYear() + direction);
+  }
+  return toISODate(d);
+}
+
+function periodStart(scope, dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (scope === "week") {
+    const dayIndex = (d.getDay() + 6) % 7; // Monday = 0
+    d.setDate(d.getDate() - dayIndex);
+  } else if (scope === "month") {
+    d.setDate(1);
+  } else if (scope === "year") {
+    d.setDate(1);
+    d.setMonth(0);
+  }
+  return toISODate(d);
+}
+
+function isCurrentPeriod(scope, dateStr) {
+  return periodStart(scope, dateStr) === periodStart(scope, today);
+}
 
 async function loadDay() {
-  const res = await fetch(`/days/${today}`);
+  const res = await fetch(`/days/${viewDate}`);
   const data = await res.json();
   renderDay(data);
 }
@@ -21,6 +60,27 @@ function formatDateLabel(isoDate) {
     year: "numeric",
   });
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function formatPeriodLabel(scope, dateStr) {
+  if (scope === "day") {
+    return formatDateLabel(dateStr);
+  }
+  if (scope === "week") {
+    const monday = periodStart("week", dateStr);
+    const label = new Date(`${monday}T00:00:00`).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    return `Semaine du ${label}`;
+  }
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (scope === "month") {
+    const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return `${d.getFullYear()}`;
 }
 
 function moodEmoji(ratio) {
@@ -37,6 +97,8 @@ let currentStart = 0;
 let currentHabits = [];
 
 const SCOPE_LABELS = { day: "Quotidienne", week: "Hebdomadaire", month: "Mensuelle", year: "Annuelle" };
+const SCOPE_NOUN = { day: "Journée", week: "Semaine", month: "Mois", year: "Année" };
+const SCOPE_CURRENT_NOUN = { day: "Aujourd'hui", week: "Cette semaine", month: "Ce mois-ci", year: "Cette année" };
 const STATUS_LABELS = { complete: "Complet", incomplete: "Incomplet", neutralized: "Neutralisée" };
 
 function habitPercent(h) {
@@ -58,7 +120,7 @@ function habitProgressText(h) {
   return `${h.today_total}${unit} / ${h.target}${unit}`;
 }
 
-function buildHabitCard(h) {
+function buildHabitCard(h, interactive) {
   const card = document.createElement("article");
   card.className = "habit-card";
 
@@ -98,37 +160,46 @@ function buildHabitCard(h) {
   fill.style.width = `${habitPercent(h)}%`;
   bar.appendChild(fill);
 
-  const action = document.createElement("div");
-  action.className = "habit-card-action";
+  body.append(name, scope, progressText, bar);
 
-  if (h.kind === "binary") {
-    const btn = document.createElement("button");
-    btn.textContent = "✓";
-    btn.addEventListener("click", () => logCompletion(h.habit_id, 1));
-    action.appendChild(btn);
-  } else {
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = "0.01";
-    input.placeholder = h.unit || "val.";
-    input.className = "input-small";
+  // Retroactive logging happens through Historique, not through this
+  // browsing view - quick-log controls only make sense on the current period.
+  if (interactive) {
+    const action = document.createElement("div");
+    action.className = "habit-card-action";
 
-    const btn = document.createElement("button");
-    btn.textContent = "Ajouter";
-    btn.addEventListener("click", () => {
-      const value = parseFloat(input.value);
-      if (!value || value <= 0) return;
-      logCompletion(h.habit_id, value);
-    });
+    if (h.kind === "binary") {
+      const btn = document.createElement("button");
+      btn.textContent = "✓";
+      btn.addEventListener("click", () => logCompletion(h.habit_id, 1));
+      action.appendChild(btn);
+    } else {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.step = "0.01";
+      input.placeholder = h.unit || "val.";
+      input.className = "input-small";
 
-    action.append(input, btn);
+      const btn = document.createElement("button");
+      btn.textContent = "Ajouter";
+      btn.addEventListener("click", () => {
+        const value = parseFloat(input.value);
+        if (!value || value <= 0) return;
+        logCompletion(h.habit_id, value);
+      });
+
+      action.append(input, btn);
+    }
+
+    body.appendChild(action);
   }
 
-  body.append(name, scope, progressText, bar, action);
   card.appendChild(body);
 
   return card;
 }
+
+let currentInteractive = true;
 
 function renderHabitCards() {
   const container = document.getElementById("habit-cards");
@@ -141,7 +212,7 @@ function renderHabitCards() {
   const pageHabits = currentHabits.slice(currentStart, currentStart + PAGE_SIZE);
 
   for (const h of pageHabits) {
-    container.appendChild(buildHabitCard(h));
+    container.appendChild(buildHabitCard(h, currentInteractive));
   }
 
   document.getElementById("pagination-label").textContent =
@@ -168,24 +239,38 @@ document.getElementById("next-page").addEventListener("click", () => {
 });
 
 function renderDay(data) {
-  document.getElementById("today-date").textContent = formatDateLabel(data.date);
+  const scope = navScopeField.dataset.value;
+  const interactive = isCurrentPeriod(scope, viewDate);
+  currentInteractive = interactive;
 
-  document.getElementById("ratio-value").textContent =
-    `${data.habits_met}/${data.habits_total}`;
+  document.getElementById("page-title").textContent =
+    interactive ? SCOPE_CURRENT_NOUN[scope] : SCOPE_NOUN[scope];
+  document.getElementById("cards-heading").textContent = SCOPE_NOUN[scope];
+  document.getElementById("today-date").textContent = formatPeriodLabel(scope, viewDate);
 
-  // Neutralized habits are excluded from the essentials count too, same
-  // reasoning as the back-end's essentials_met: a habit that's neither a
-  // success nor a failure that day shouldn't count against you either.
-  const evaluable = data.habits.filter((h) => h.status !== "neutralized");
+  document.getElementById("readonly-badge").hidden = interactive;
+  document.getElementById("creation-section").hidden = !interactive;
+
+  // Only keep habits whose own scope matches the selected view: a "Semaine"
+  // view shows weekly goals, not daily ones mixed in.
+  const scopedHabits = data.habits.filter((h) => h.period_scope === scope);
+
+  // Neutralized habits are excluded from the ratio/essentials count too,
+  // same reasoning as the back-end's essentials_met: a habit that's neither
+  // a success nor a failure that day shouldn't count against you either.
+  const evaluable = scopedHabits.filter((h) => h.status !== "neutralized");
+  const met = evaluable.filter((h) => h.status === "complete").length;
+  document.getElementById("ratio-value").textContent = `${met}/${evaluable.length}`;
+
   const essentials = evaluable.filter((h) => h.is_essential);
   const essentialsMet = essentials.filter((h) => h.status === "complete").length;
   document.getElementById("essentials-value").textContent =
     `${essentialsMet}/${essentials.length}`;
 
-  const overallRatio = data.habits_total > 0 ? data.habits_met / data.habits_total : null;
+  const overallRatio = evaluable.length > 0 ? met / evaluable.length : null;
   document.getElementById("mood").textContent = moodEmoji(overallRatio);
 
-  currentHabits = data.habits;
+  currentHabits = scopedHabits;
   renderHabitCards();
 }
 
@@ -282,6 +367,34 @@ document.getElementById("habit-form").addEventListener("submit", async (event) =
   essentialToggle.dataset.active = "false";
   essentialToggle.classList.remove("active");
   updateFormVisibility();
+  loadDay();
+});
+
+const navScopeField = document.querySelector('.segmented[data-field="nav-scope"]');
+
+setupSegmented(navScopeField, () => {
+  // switching scope jumps back to the current period for that scope,
+  // rather than reinterpreting whatever date happened to be selected
+  viewDate = today;
+  currentStart = 0;
+  loadDay();
+});
+
+document.getElementById("nav-prev").addEventListener("click", () => {
+  viewDate = stepDate(viewDate, navScopeField.dataset.value, -1);
+  currentStart = 0;
+  loadDay();
+});
+
+document.getElementById("nav-next").addEventListener("click", () => {
+  viewDate = stepDate(viewDate, navScopeField.dataset.value, 1);
+  currentStart = 0;
+  loadDay();
+});
+
+document.getElementById("nav-today").addEventListener("click", () => {
+  viewDate = today;
+  currentStart = 0;
   loadDay();
 });
 
