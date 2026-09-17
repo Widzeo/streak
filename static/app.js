@@ -32,6 +32,141 @@ function moodEmoji(ratio) {
   return "😢";
 }
 
+const PAGE_SIZE = 3;
+let currentStart = 0;
+let currentHabits = [];
+
+const SCOPE_LABELS = { day: "Quotidienne", week: "Hebdomadaire", month: "Mensuelle", year: "Annuelle" };
+const STATUS_LABELS = { complete: "Complet", incomplete: "Incomplet", neutralized: "Neutralisée" };
+
+function habitPercent(h) {
+  const isDayScope = h.period_scope === "day";
+  const denominator = isDayScope ? Number(h.target) : h.cadence;
+  const numerator = isDayScope ? Number(h.today_total) : h.days_met;
+  if (!denominator || denominator <= 0) return 0;
+  return Math.min(100, Math.round((numerator / denominator) * 100));
+}
+
+function habitProgressText(h) {
+  if (h.period_scope !== "day") {
+    return `${h.days_met} / ${h.cadence} jours`;
+  }
+  if (h.kind === "binary") {
+    return Number(h.today_total) >= Number(h.target) ? "Fait" : "À faire";
+  }
+  const unit = h.unit || "";
+  return `${h.today_total}${unit} / ${h.target}${unit}`;
+}
+
+function buildHabitCard(h) {
+  const card = document.createElement("article");
+  card.className = "habit-card";
+
+  const header = document.createElement("div");
+  header.className = `habit-card-header status-${h.status}`;
+
+  const percent = document.createElement("span");
+  percent.className = "habit-card-percent";
+  percent.textContent = `${habitPercent(h)}%`;
+
+  const statusText = document.createElement("span");
+  statusText.className = "habit-card-status";
+  statusText.textContent = STATUS_LABELS[h.status] || h.status;
+
+  header.append(percent, statusText);
+  card.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "habit-card-body";
+
+  const name = document.createElement("h3");
+  name.className = "habit-card-name";
+  name.textContent = h.name + (h.is_essential ? " ★" : "");
+
+  const scope = document.createElement("p");
+  scope.className = "habit-card-scope";
+  scope.textContent = SCOPE_LABELS[h.period_scope] || h.period_scope;
+
+  const progressText = document.createElement("p");
+  progressText.className = "habit-card-progress";
+  progressText.textContent = habitProgressText(h);
+
+  const bar = document.createElement("div");
+  bar.className = "progress-bar";
+  const fill = document.createElement("div");
+  fill.className = "progress-bar-fill";
+  fill.style.width = `${habitPercent(h)}%`;
+  bar.appendChild(fill);
+
+  const action = document.createElement("div");
+  action.className = "habit-card-action";
+
+  if (h.kind === "binary") {
+    const btn = document.createElement("button");
+    btn.textContent = "✓";
+    btn.addEventListener("click", () => logCompletion(h.habit_id, 1));
+    action.appendChild(btn);
+  } else {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = "0.01";
+    input.placeholder = h.unit || "val.";
+    input.className = "input-small";
+
+    const btn = document.createElement("button");
+    btn.textContent = "Ajouter";
+    btn.addEventListener("click", () => {
+      const value = parseFloat(input.value);
+      if (!value || value <= 0) return;
+      logCompletion(h.habit_id, value);
+    });
+
+    action.append(input, btn);
+  }
+
+  body.append(name, scope, progressText, bar, action);
+  card.appendChild(body);
+
+  return card;
+}
+
+function renderHabitCards() {
+  const container = document.getElementById("habit-cards");
+  container.innerHTML = "";
+
+  const total = currentHabits.length;
+  const maxStart = Math.max(0, total - PAGE_SIZE);
+  currentStart = Math.min(currentStart, maxStart);
+
+  const pageHabits = currentHabits.slice(currentStart, currentStart + PAGE_SIZE);
+
+  for (const h of pageHabits) {
+    container.appendChild(buildHabitCard(h));
+  }
+
+  document.getElementById("pagination-label").textContent =
+    total === 0
+      ? "Aucune habitude"
+      : `${currentStart + 1}-${Math.min(currentStart + PAGE_SIZE, total)} sur ${total} habitudes`;
+
+  document.getElementById("prev-page").disabled = currentStart === 0;
+  document.getElementById("next-page").disabled = currentStart >= maxStart;
+}
+
+document.getElementById("prev-page").addEventListener("click", () => {
+  if (currentStart > 0) {
+    currentStart -= 1;
+    renderHabitCards();
+  }
+});
+
+document.getElementById("next-page").addEventListener("click", () => {
+  if (currentStart + PAGE_SIZE < currentHabits.length) {
+    currentStart += 1;
+    renderHabitCards();
+  }
+});
+
 function renderDay(data) {
   document.getElementById("today-date").textContent = formatDateLabel(data.date);
 
@@ -50,51 +185,8 @@ function renderDay(data) {
   const overallRatio = data.habits_total > 0 ? data.habits_met / data.habits_total : null;
   document.getElementById("mood").textContent = moodEmoji(overallRatio);
 
-  const list = document.getElementById("habit-list");
-  list.innerHTML = "";
-
-  for (const h of data.habits) {
-    const li = document.createElement("li");
-    li.className = `habit status-${h.status}`;
-
-    const label = document.createElement("span");
-    label.textContent = h.name + (h.is_essential ? " ★" : "");
-    li.appendChild(label);
-
-    const progress = document.createElement("span");
-    progress.className = "progress";
-    progress.textContent =
-      h.period_scope === "day"
-        ? `${h.today_total} / ${h.target}`
-        : `${h.days_met} / ${h.cadence} jours`;
-    li.appendChild(progress);
-
-    if (h.kind === "binary") {
-      const btn = document.createElement("button");
-      btn.textContent = "✓";
-      btn.addEventListener("click", () => logCompletion(h.habit_id, 1));
-      li.appendChild(btn);
-    } else {
-      const input = document.createElement("input");
-      input.type = "number";
-      input.step = "0.01";
-      input.placeholder = h.unit || "valeur";
-      input.style.width = "5em";
-
-      const btn = document.createElement("button");
-      btn.textContent = "Ajouter";
-      btn.addEventListener("click", () => {
-        const value = parseFloat(input.value);
-        if (!value || value <= 0) return;
-        logCompletion(h.habit_id, value);
-      });
-
-      li.appendChild(input);
-      li.appendChild(btn);
-    }
-
-    list.appendChild(li);
-  }
+  currentHabits = data.habits;
+  renderHabitCards();
 }
 
 async function logCompletion(habitId, value) {
@@ -106,19 +198,65 @@ async function logCompletion(habitId, value) {
   loadDay();
 }
 
+function setupSegmented(container, onChange) {
+  const buttons = container.querySelectorAll(".segmented-option");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      container.dataset.value = btn.dataset.value;
+      onChange();
+    });
+  });
+}
+
+function resetSegmented(container) {
+  const buttons = container.querySelectorAll(".segmented-option");
+  buttons.forEach((b, i) => b.classList.toggle("active", i === 0));
+  container.dataset.value = buttons[0].dataset.value;
+}
+
+const kindField = document.querySelector('.segmented[data-field="kind"]');
+const scopeField = document.querySelector('.segmented[data-field="period_scope"]');
+const directionField = document.querySelector('.segmented[data-field="direction"]');
+const quantifiedFields = document.getElementById("quantified-fields");
+const cadenceCountGroup = document.getElementById("cadence-count-group");
+const essentialToggle = document.getElementById("essential-toggle");
+
+function updateFormVisibility() {
+  quantifiedFields.hidden = kindField.dataset.value !== "quantified";
+  cadenceCountGroup.hidden = scopeField.dataset.value === "day";
+}
+
+setupSegmented(kindField, updateFormVisibility);
+setupSegmented(scopeField, updateFormVisibility);
+setupSegmented(directionField, () => {});
+
+essentialToggle.addEventListener("click", () => {
+  const isActive = essentialToggle.dataset.active === "true";
+  essentialToggle.dataset.active = isActive ? "false" : "true";
+  essentialToggle.classList.toggle("active", !isActive);
+});
+
+updateFormVisibility();
+
 document.getElementById("habit-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.target;
 
+  const kind = kindField.dataset.value;
+  const periodScope = scopeField.dataset.value;
+  const isQuantified = kind === "quantified";
+
   const data = {
     name: form.name.value,
-    kind: form.kind.value,
-    unit: form.unit.value || null,
-    period_scope: form.period_scope.value,
-    cadence: parseInt(form.cadence.value, 10),
-    target: form.target.value,
-    direction: form.direction.value,
-    is_essential: form.is_essential.checked,
+    kind,
+    unit: isQuantified ? form.unit.value || null : null,
+    period_scope: periodScope,
+    cadence: periodScope === "day" ? 1 : parseInt(form.cadence.value, 10),
+    target: isQuantified ? form.target.value : "1",
+    direction: isQuantified ? directionField.dataset.value : "at_least",
+    is_essential: essentialToggle.dataset.active === "true",
     active_from: today,
   };
 
@@ -138,6 +276,12 @@ document.getElementById("habit-form").addEventListener("submit", async (event) =
 
   errorEl.textContent = "";
   form.reset();
+  resetSegmented(kindField);
+  resetSegmented(scopeField);
+  resetSegmented(directionField);
+  essentialToggle.dataset.active = "false";
+  essentialToggle.classList.remove("active");
+  updateFormVisibility();
   loadDay();
 });
 
