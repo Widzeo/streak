@@ -79,11 +79,75 @@ header {
   margin-bottom: 1.5rem;
 }
 
+.day-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.date-label {
+  margin: 0 0 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 h1 {
   font-size: 2.5rem;
   font-weight: 800;
   letter-spacing: -0.01em;
-  margin: 0 0 1.5rem;
+  margin: 0;
+}
+
+.day-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 14px;
+  min-width: 4.5rem;
+}
+
+.badge-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.badge-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-ratio {
+  background: var(--indigo);
+  color: #fff;
+}
+
+.badge-essentials {
+  background: var(--gold-bg);
+  color: var(--text);
+}
+
+.badge-essentials .badge-label {
+  order: -1;
+  color: var(--text-muted);
+}
+
+.mood {
+  font-size: 1.8rem;
+  line-height: 1;
 }
 
 h2 {

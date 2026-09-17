@@ -19,9 +19,25 @@
     </div>
   </nav>
 
-  <header>
-    <p id="today-date"></p>
-    <p id="ratio"></p>
+  <header class="day-header">
+    <div class="day-header-main">
+      <p id="today-date" class="date-label"></p>
+      <h1>Aujourd'hui</h1>
+    </div>
+
+    <div class="day-header-badges">
+      <div class="badge badge-ratio">
+        <span id="ratio-value" class="badge-value"></span>
+        <span class="badge-label">atteintes</span>
+      </div>
+
+      <div id="mood" class="mood" aria-hidden="true"></div>
+
+      <div class="badge badge-essentials">
+        <span class="badge-label">Essentielles</span>
+        <span id="essentials-value" class="badge-value"></span>
+      </div>
+    </div>
   </header>
 
   <main>

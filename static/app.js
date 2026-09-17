@@ -12,11 +12,43 @@ async function loadDay() {
   renderDay(data);
 }
 
+function formatDateLabel(isoDate) {
+  const d = new Date(`${isoDate}T00:00:00`);
+  const label = d.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function moodEmoji(ratio) {
+  if (ratio === null) return "😐";
+  if (ratio >= 1) return "😄";
+  if (ratio >= 0.7) return "🙂";
+  if (ratio >= 0.4) return "😐";
+  if (ratio > 0) return "😕";
+  return "😢";
+}
+
 function renderDay(data) {
-  document.getElementById("today-date").textContent = data.date;
-  document.getElementById("ratio").textContent =
-    `${data.habits_met}/${data.habits_total} habitudes atteintes` +
-    (data.essentials_met ? " — essentielles validées" : " — essentielles non validées");
+  document.getElementById("today-date").textContent = formatDateLabel(data.date);
+
+  document.getElementById("ratio-value").textContent =
+    `${data.habits_met}/${data.habits_total}`;
+
+  // Neutralized habits are excluded from the essentials count too, same
+  // reasoning as the back-end's essentials_met: a habit that's neither a
+  // success nor a failure that day shouldn't count against you either.
+  const evaluable = data.habits.filter((h) => h.status !== "neutralized");
+  const essentials = evaluable.filter((h) => h.is_essential);
+  const essentialsMet = essentials.filter((h) => h.status === "complete").length;
+  document.getElementById("essentials-value").textContent =
+    `${essentialsMet}/${essentials.length}`;
+
+  const overallRatio = data.habits_total > 0 ? data.habits_met / data.habits_total : null;
+  document.getElementById("mood").textContent = moodEmoji(overallRatio);
 
   const list = document.getElementById("habit-list");
   list.innerHTML = "";
