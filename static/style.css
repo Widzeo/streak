@@ -435,3 +435,75 @@ button:hover {
   color: var(--coral);
   font-weight: 600;
 }
+
+.history-table {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.65rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-row-head {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border);
+}
+
+.history-row:last-child {
+  border-bottom: none;
+}
+
+.history-value {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.status-dot.status-complete {
+  background: var(--green);
+}
+
+.status-dot.status-incomplete {
+  background: var(--coral);
+}
+
+.status-dot.status-neutralized {
+  background: var(--indigo);
+}
+
+.icon-button {
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.3rem;
+  border-radius: 8px;
+}
+
+.icon-button:hover {
+  background: var(--coral-bg);
+  color: var(--coral);
+  opacity: 1;
+}

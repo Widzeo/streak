@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Streak — Historique</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <nav class="topbar">
+    <div class="brand">
+      <span class="logo">🔥</span>
+      <span class="brand-name">Streak</span>
+    </div>
+    <div class="tabs">
+      <a href="/" class="tab">Aujourd'hui</a>
+      <a href="/historique.html" class="tab active">Historique</a>
+      <span class="tab disabled" title="Bientôt disponible">Séries &amp; Stats</span>
+    </div>
+  </nav>
+
+  <header class="day-header">
+    <div class="day-header-main">
+      <h1>Historique</h1>
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">Filtrer</span>
+      <select id="habit-filter">
+        <option value="">Toutes les habitudes</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="history-table">
+        <div class="history-row history-row-head">
+          <span>Habitude</span>
+          <span>Date</span>
+          <span>Valeur</span>
+          <span></span>
+        </div>
+        <div id="history-rows"></div>
+      </div>
+
+      <div class="section-header-row">
+        <span id="history-summary"></span>
+        <div class="pagination-info">
+          <button type="button" id="history-prev" class="pagination-arrow" aria-label="Précédent">‹</button>
+          <button type="button" id="history-next" class="pagination-arrow" aria-label="Suivant">›</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/historique.js"></script>
+</body>
+</html>
