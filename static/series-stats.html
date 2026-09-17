@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Streak — Séries &amp; Stats</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <nav class="topbar">
+    <div class="brand">
+      <span class="logo">🔥</span>
+      <span class="brand-name">Streak</span>
+    </div>
+    <div class="tabs">
+      <a href="/" class="tab">Aujourd'hui</a>
+      <a href="/historique.html" class="tab">Historique</a>
+      <a href="/series-stats.html" class="tab active">Séries &amp; Stats</a>
+    </div>
+  </nav>
+
+  <header class="day-header">
+    <div class="day-header-main">
+      <h1>Séries &amp; Stats</h1>
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">Fréquence</span>
+      <div class="segmented" data-field="streak-scope" data-value="all">
+        <button type="button" class="segmented-option active" data-value="all">Toutes</button>
+        <button type="button" class="segmented-option" data-value="day">Quotidienne</button>
+        <button type="button" class="segmented-option" data-value="week">Hebdo</button>
+        <button type="button" class="segmented-option" data-value="month">Mensuel</button>
+        <button type="button" class="segmented-option" data-value="year">Annuel</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div id="streak-cards" class="streak-cards"></div>
+    </section>
+
+    <section>
+      <div class="section-header-row">
+        <h2>Heatmap annuelle</h2>
+        <div class="pagination-info">
+          <button type="button" id="heatmap-prev" class="pagination-arrow" aria-label="Année précédente">‹</button>
+          <span id="heatmap-year"></span>
+          <button type="button" id="heatmap-next" class="pagination-arrow" aria-label="Année suivante">›</button>
+        </div>
+      </div>
+
+      <div id="heatmap-grid" class="heatmap-grid"></div>
+
+      <div class="heatmap-legend">
+        <span>Moins</span>
+        <span class="heatmap-cell heat-0"></span>
+        <span class="heatmap-cell heat-1"></span>
+        <span class="heatmap-cell heat-2"></span>
+        <span class="heatmap-cell heat-3"></span>
+        <span class="heatmap-cell heat-4"></span>
+        <span>Plus</span>
+        <span class="heatmap-cell heat-full"></span>
+        <span>100%</span>
+      </div>
+    </section>
+  </main>
+
+  <script src="/series-stats.js"></script>
+</body>
+</html>

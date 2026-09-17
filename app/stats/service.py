@@ -211,9 +211,21 @@ def get_year_heatmap(session: Session, year: int) -> YearHeatmap:
         for habit_id, logical_date, total in rows:
             totals_by_habit.setdefault(habit_id, {})[logical_date] = total
 
+    today = date.today()
+
     days = []
     current = year_start
     while current <= year_end:
+        # a day that hasn't happened yet can't be evaluated - showing it as
+        # "no data" avoids habits with a lenient at_most/cadence=1 target
+        # trivially reading as complete on days nothing could have occurred.
+        if current > today:
+            days.append(
+                DayHeatmapEntry(date=current, habits_met=0, habits_total=0, complete=False)
+            )
+            current += timedelta(days=1)
+            continue
+
         active_habits = [
             h
             for h in habits
